@@ -5,9 +5,9 @@ import pandas as pd
 
 from requests import get
 
-
+dchoose = 'region'
 #---------Use government API to access data----------#
-
+#--https://coronavirus.data.gov.uk/developers-guide--#
 def get_data(url):
     response = get(endpoint, timeout=10)
 
@@ -17,16 +17,28 @@ def get_data(url):
     return response.json()
 
 
-if __name__ == '__main__':
-    endpoint = (
-        'https://api.coronavirus.data.gov.uk/v1/data?'
-        'filters=areaType=nation&'
-        'structure={"date":"date","newCases":"newCasesByPublishDate","cumCases":"cumCasesByPublishDate"'
-        ',"newDeaths":"newDeathsByPublishDate","cumDeaths":"cumDeathsByPublishDate","nation":"areaName"}'
-    )
+if dchoose == 'nation':
+    if __name__ == '__main__':
+        endpoint = (
+            'https://api.coronavirus.data.gov.uk/v1/data?'
+            'filters=areaType=nation&'
+            'structure={"date":"date", "newDeaths":"newDeathsByPublishDate", "cumDeaths":"cumDeathsByPublishDate","nation":"areaName"}'
+        )
+        data = get_data(endpoint)
+        # print(data)
 
-    data = get_data(endpoint)
-    print(data)
+elif dchoose == 'region':
+    if __name__ == '__main__':
+        endpoint = (
+            'https://api.coronavirus.data.gov.uk/v1/data?'
+            'filters=areaType=region&'
+            'structure={"date":"date", "newDeaths":"newDeathsByDeathDate", "cumDeaths":"cumDeathsByDeathDate","nation":"areaName"}'
+        )
+        data = get_data(endpoint)
+        print(data)
+
+
+
 
 def mergeDict(dict1, dict2):
    ''' Merge dictionaries and keep values of common keys in list'''
@@ -50,29 +62,25 @@ for i in range(data['length']-1):
     else:
         dict = mergeDict(data["data"][i+1], dict)
 
+#-------------------Load dataset-----------------#
 cv_latest = pd.DataFrame(dict)
+#-------------------Find uninque nations-----------------#
+nations = np.unique(cv_latest['nation'])
+reporting_dates = np.unique(cv_latest['date'])
 
-#Seperate out the different countries
-#Reorder for cumulative in sensible direction
-England = cv_latest.loc[cv_latest['nation'] == 'England'].iloc[::-1]
-Wales = cv_latest.loc[cv_latest['nation'] == 'Wales'].iloc[::-1]
-Scotland = cv_latest.loc[cv_latest['nation'] == 'Scotland'].iloc[::-1]
-Northern_Ireland = cv_latest.loc[cv_latest['nation'] == 'Northern Ireland'].iloc[::-1]
-UK = cv_latest.loc[cv_latest['nation'] == 'United Kingdom'].iloc[::-1]
-
-#turn data into an actual usable quantity
-
-
-# if __name__ == '__main__':
-#     endpoint = (
-#         'https://api.coronavirus.data.gov.uk/v1/data?'
-#         'filters=areaType=region&'
-#         'structure={"date":"date","newCases":"newCasesByPublishDate","cumCases":"cumCasesByPublishDate"'
-#         ',"newDeaths":"newDeathsByPublishDate","cumDeaths":"cumDeathsByPublishDate"}'
-#     )
-#
-#     data = get_data(endpoint)
-#     print(data)
+#-------------Make list of dictionary keys-----------#
+keys = ['date']
+for i in nations:
+    keys.append(i + '_dcids')
+    keys.append(i + '_rollavg')
+    keys.append(i + '_rollavg_std')
+    keys.append(i + '_cum')
+keys.append('UK_dcids')
+keys.append('UK_rollavg')
+keys.append('UK_rollavg_std')
+keys.append('UK_cum')
+keys = np.array(keys)
+# print(keys)
 
 
 #-------------------FUNCTIONS-----------------#
@@ -90,101 +98,104 @@ def pullout_csums(i, len_arr_out):
 
 def moving_avg(array_in, nOsteps):
     # create a 7-day moving average for daily cases
+    # and a standard deviation
     new_array = np.zeros(len(array_in))
+    new_array_std = np.zeros(len(array_in))
     for j in range(len(new_array)):
         if j == 0:
             new_array[0] += array_in[0]
+            if array_in[0] != 0:
+                new_array_std[0] += np.sqrt(array_in[0])
+            else:
+                new_array_std[0] += 0
         elif 0 < j < nOsteps:
             new_array[j] += np.mean(array_in[:j])
+            new_array_std[j] += np.std(array_in[:j])
         else:
             new_array[j] += np.mean(array_in[j-nOsteps:j])
-    return new_array
+            new_array_std[j] += np.std(array_in[j - nOsteps:j])
 
+    return new_array, new_array_std
 
-#-------------------Load dataset-----------------#
-#take dataset from
-# cv_deaths = pd.read_csv('../PhD/coronavirus-deaths_latest.csv')
-# cv_deaths = pd.read_csv('../PhD/covid.csv')
-#
-#
-# #Seperate out the different countries
-# #Reorder for cumulative in sensible direction
-# England = cv_deaths.loc[cv_deaths['Area name'] == 'England'].iloc[::-1]
-# Wales = cv_deaths.loc[cv_deaths['Area name'] == 'Wales'].iloc[::-1]
-# Scotland = cv_deaths.loc[cv_deaths['Area name'] == 'Scotland'].iloc[::-1]
-# Northern_Ireland = cv_deaths.loc[cv_deaths['Area name'] == 'Northern Ireland'].iloc[::-1]
-# UK = cv_deaths.loc[cv_deaths['Area name'] == 'United Kingdom'].iloc[::-1]
+#-------------------FUNCTIONS-----------------#
 
-
-#combine into a single dataframe
+#combine into a single dataframe with columns per country
 #create numpy arrays
-reporting_dates = England['date'].values
 len_array = reporting_dates.shape[0]
-for i in [England, Wales, Scotland, Northern_Ireland]:
+sum_dci_deaths, sum_rolling_avg = np.zeros(len_array), np.zeros(len_array)
+sum_cum_deaths, sum_rolling_avg_std = np.zeros(len_array), np.zeros(len_array)
+for i in nations:
+    country_data = cv_latest.loc[cv_latest['nation'] == i].iloc[::-1]
 
-    dci_deaths = pullout_dcids(i, len_array)
-    rolling_avg = moving_avg(dci_deaths, 7)
-    cum_deaths = pullout_csums(i, len_array)
+    dci_deaths = pullout_dcids(country_data, len_array)
+    rolling_avg, rolling_avg_std = moving_avg(dci_deaths, 7)
+    cum_deaths = pullout_csums(country_data, len_array)
+
+    # rolling_avg_std += 1e-6
+
+    sum_dci_deaths += dci_deaths
+    # sum_rolling_avg += rolling_avg
+    # sum_rolling_avg_std += np.sqrt(sum_rolling_avg_std**2 + rolling_avg**2)
+    sum_cum_deaths += cum_deaths
 
     reporting_dates = np.c_[reporting_dates, dci_deaths]
     reporting_dates = np.c_[reporting_dates, rolling_avg]
+    reporting_dates = np.c_[reporting_dates, rolling_avg_std]
     reporting_dates = np.c_[reporting_dates, cum_deaths]
 
+sum_rolling_avg, sum_rolling_avg_std = moving_avg(sum_dci_deaths, 7)
 
+Data = {}
+for i in range(len(keys)):
+    if i >= len(keys)-4:
+        if i == len(keys)-4:
+            Data[keys[i]] = sum_dci_deaths
+        elif i == len(keys)-3:
+            Data[keys[i]] = sum_rolling_avg
+        elif i == len(keys)-2:
+            Data[keys[i]] = sum_rolling_avg_std
+        elif i == len(keys)-1:
+            Data[keys[i]] = sum_cum_deaths
+    else:
+        Data[keys[i]] = reporting_dates[:, i]
 
-Data = {
-        'Date': reporting_dates[:,0], 'England_dcids': reporting_dates[:,1],
-        'England_rollavg': reporting_dates[:,2],
-        'England_cum': reporting_dates[:,3], 'Wales_dcids': reporting_dates[:,4],
-        'Wales_rollavg':reporting_dates[:,5],
-        'Wales_cum': reporting_dates[:,6], 'Scotland_dcids': reporting_dates[:,7],
-        'Scotland_rollavg':reporting_dates[:,8],
-        'Scotland_cum': reporting_dates[:,9], 'Northern_Ireland_dcids': reporting_dates[:,10],
-        'Northern_Ireland_rollavg':reporting_dates[:,11],
-        'Northern_Ireland_cum': reporting_dates[:,12],
-        'UK_dcids': reporting_dates[:,1]+reporting_dates[:,4]+reporting_dates[:,7]+reporting_dates[:,10],
-        'UK_rollavg': reporting_dates[:,2]+reporting_dates[:,5]+reporting_dates[:,8]+reporting_dates[:,11],
-        'UK_cum': reporting_dates[:,3]+reporting_dates[:,6]+reporting_dates[:,9]+reporting_dates[:,12]
-        }
+combined_df = pd.DataFrame(Data, columns=keys)
 
+for i in range(1,len(keys)):
+    combined_df[keys[i]] = combined_df[keys[i]].apply(pd.to_numeric, downcast='float', errors='coerce')
 
-combined_df = pd.DataFrame(Data, columns=['Date', 'England_dcids', 'England_rollavg',
-                                    'England_cum', 'Wales_dcids', 'Wales_rollavg',
-                                    'Wales_cum', 'Scotland_dcids', 'Scotland_rollavg',
-                                    'Scotland_cum', 'Northern_Ireland_dcids',
-                                    'Northern_Ireland_rollavg', 'Northern_Ireland_cum',
-                                    'UK_dcids', 'UK_rollavg', 'UK_cum'])
-
-plot_col_dcids = ['England_dcids','Scotland_dcids','Wales_dcids','Northern_Ireland_dcids','UK_dcids']
-plot_col_roll_avgs = ['England_rollavg','Scotland_rollavg','Wales_rollavg','Northern_Ireland_rollavg','UK_rollavg']
+plot_col_dcids = keys[np.arange(1, len(keys), 4)]
+plot_col_roll_avgs = keys[np.arange(2, len(keys), 4)]
+plot_col_roll_avgs_std = keys[np.arange(3, len(keys), 4)]
 cols = sns.color_palette("Set2")[:len(plot_col_dcids)]
 
-colors = ["windows blue", "amber", "greyish", "faded green", "dusty purple"]
+colors = ["windows blue", "amber", "greyish", "faded green", "dusty purple", "olive", "maroon", "sea green"]
 cols = sns.xkcd_palette(colors)
 
 fig, ax = plt.subplots()
 
-combined_df.plot(x = 'Date', y = plot_col_dcids, ax=ax, grid=False, rot=90, alpha=0.5,
-                 color=cols, figsize=(12,8))
-combined_df.plot(x = 'Date', y = plot_col_roll_avgs, ax=ax, sharex=True, grid=False, rot=90,
-                 lw=3, color=cols)
+combined_df.plot(x='date', y=plot_col_dcids, ax=ax, grid=False, rot=90, alpha=0.5,
+                 color=cols, figsize=(12, 8))
+
+# combined_df.plot(x='date', y=plot_col_roll_avgs, ax=ax, sharex=True, grid=False,
+#                  rot=90, lw=3, color=cols)
+
+for i in range(len(plot_col_roll_avgs)):
+    upper_bounds = combined_df[plot_col_roll_avgs[i]].to_numpy() - combined_df[plot_col_roll_avgs_std[i]].to_numpy()
+    lower_bounds = combined_df[plot_col_roll_avgs[i]].to_numpy() + combined_df[plot_col_roll_avgs_std[i]].to_numpy()
+    ax.fill_between(combined_df['date'], lower_bounds, upper_bounds,
+                    alpha=0.3, facecolor=cols[i])
+
+for i in range(len(plot_col_roll_avgs)):
+    combined_df.plot(x='date', y=plot_col_roll_avgs[i], ax=ax, sharex=True, grid=False, rot=90,
+                     lw=3, color=cols[i])
+
 plt.tight_layout()
 
 fig, ax = plt.subplots()
-plot_col_cum = ['England_cum','Scotland_cum','Wales_cum','Northern_Ireland_cum','UK_cum']
-combined_df.plot(x = 'Date', y = plot_col_cum, ax=ax, grid=False, rot=90, figsize=(12,8), color=cols)
+plot_col_cum = keys[np.arange(4, len(keys), 4)]
+combined_df.plot(x='date', y=plot_col_cum, ax=ax, grid=False, rot=90, figsize=(12,8), color=cols)
 plt.tight_layout()
-
-
-
-
-
-
-
-
-
-
-
 
 
 
