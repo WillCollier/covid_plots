@@ -5,40 +5,80 @@ import pandas as pd
 
 from requests import get
 
-dchoose = 'region'
-#---------Use government API to access data----------#
-#--https://coronavirus.data.gov.uk/developers-guide--#
-def get_data(url):
-    response = get(endpoint, timeout=10)
+# dchoose = 'region'
+# #---------Use government API to access data----------#
+# #--https://coronavirus.data.gov.uk/developers-guide--#
+# def get_data(url):
+#     response = get(endpoint, timeout=10)
+#
+#     if response.status_code >= 400:
+#         raise RuntimeError(f'Request failed: {response.text}')
+#
+#     return response.json()
+#
+#
+# if dchoose == 'nation':
+#     if __name__ == '__main__':
+#         endpoint = (
+#             'https://api.coronavirus.data.gov.uk/v1/data?'
+#             'filters=areaType=nation&'
+#             'structure={"date":"date", "newDeaths":"newDeaths28DaysByPublishDate", "cumDeaths":"cumDeaths28DaysByPublishDate","nation":"areaName"}'
+#         )
+#         data = get_data(endpoint)
+#         # print(data)
+#
+# elif dchoose == 'region':
+#     if __name__ == '__main__':
+#         endpoint = (
+#             'https://api.coronavirus.data.gov.uk/v1/data?'
+#             'filters=areaType=region&'
+#             'structure={"date":"date", "newDeaths":"newDeaths28DaysByPublishDate", "cumDeaths":"cumDeaths28DaysByPublishDate","nation":"areaName"}'
+#         )
+#         data = get_data(endpoint)
+#         print(data)
 
-    if response.status_code >= 400:
-        raise RuntimeError(f'Request failed: {response.text}')
-
-    return response.json()
 
 
-if dchoose == 'nation':
-    if __name__ == '__main__':
-        endpoint = (
-            'https://api.coronavirus.data.gov.uk/v1/data?'
-            'filters=areaType=nation&'
-            'structure={"date":"date", "newDeaths":"newDeathsByPublishDate", "cumDeaths":"cumDeathsByPublishDate","nation":"areaName"}'
-        )
-        data = get_data(endpoint)
-        # print(data)
+from requests import get
+from json import dumps
 
-elif dchoose == 'region':
-    if __name__ == '__main__':
-        endpoint = (
-            'https://api.coronavirus.data.gov.uk/v1/data?'
-            'filters=areaType=region&'
-            'structure={"date":"date", "newDeaths":"newDeathsByDeathDate", "cumDeaths":"cumDeathsByDeathDate","nation":"areaName"}'
-        )
-        data = get_data(endpoint)
-        print(data)
+ENDPOINT = "https://api.coronavirus.data.gov.uk/v1/data"
+AREA_TYPE = "region"
+# AREA_TYPE = "nation"
+# AREA_NAME = "england"
 
+filters = [
+    f"areaType={ AREA_TYPE }"#,
+    #f"areaName={ AREA_NAME }"
+]
 
+structure = {
+    "date": "date",
+    "nation": "areaName",
+    # "code": "areaCode",
+    # "cases": {
+    "newCases": "newCasesByPublishDate",
+    "cumCases": "cumCasesByPublishDate",
+    # },
+    # "deaths": {
+    "newDeaths": "newDeaths28DaysByPublishDate",
+    "cumDeaths": "cumDeaths28DaysByPublishDate"
+    # }
+}
 
+api_params = {
+    "filters": str.join(";", filters),
+    "structure": dumps(structure, separators=(",", ":"))
+}
+
+response = get(ENDPOINT, params=api_params, timeout=10)
+
+if response.status_code >= 400:
+    raise RuntimeError(f'Request failed: { response.text }')
+
+print(response.url)
+print(response.json())
+data = response.json()
 
 def mergeDict(dict1, dict2):
    ''' Merge dictionaries and keep values of common keys in list'''
