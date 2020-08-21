@@ -43,7 +43,7 @@ from requests import get
 from json import dumps
 
 ENDPOINT = "https://api.coronavirus.data.gov.uk/v1/data"
-AREA_TYPE = "region"
+AREA_TYPE = "nation"
 # AREA_TYPE = "nation"
 # AREA_NAME = "england"
 
@@ -55,7 +55,7 @@ filters = [
 structure = {
     "date": "date",
     "nation": "areaName",
-    # "code": "areaCode",
+    "code": "areaCode",
     # "cases": {
     "newCases": "newCasesByPublishDate",
     "cumCases": "cumCasesByPublishDate",
