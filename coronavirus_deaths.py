@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from tkinter import *
 
 from requests import get
 
@@ -44,7 +45,7 @@ from json import dumps
 
 ENDPOINT = "https://api.coronavirus.data.gov.uk/v1/data"
 AREA_TYPE = "nation"
-# AREA_TYPE = "nation"
+# AREA_TYPE = "region"
 # AREA_NAME = "england"
 
 filters = [
@@ -52,19 +53,37 @@ filters = [
     #f"areaName={ AREA_NAME }"
 ]
 
-structure = {
-    "date": "date",
-    "nation": "areaName",
-    "code": "areaCode",
-    # "cases": {
-    "newCases": "newCasesByPublishDate",
-    "cumCases": "cumCasesByPublishDate",
-    # },
-    # "deaths": {
-    "newDeaths": "newDeaths28DaysByPublishDate",
-    "cumDeaths": "cumDeaths28DaysByPublishDate"
-    # }
-}
+if AREA_TYPE == "nation":
+    structure = {
+        "date": "date",
+        "nation": "areaName",
+        "code": "areaCode",
+        # "cases": {
+        "newCases": "newCasesByPublishDate",
+        "cumCases": "cumCasesByPublishDate",
+        # },
+        # "deaths": {
+        "newDeaths": "newDeaths28DaysByPublishDate",
+        "cumDeaths": "cumDeaths28DaysByPublishDate"
+        # }
+    }
+if AREA_TYPE == "region":
+    structure = {
+        "date": "date",
+        "nation": "areaName",
+        "code": "areaCode",
+        # "cases": {
+        "newCases": "newCasesBySpecimenDate",
+        "cumCases": "cumCasesBySpecimenDate",
+        # },
+        # "deaths": {
+        "newDeaths": "newDeaths28DaysByPublishDate",
+        "cumDeaths": "cumDeaths28DaysByPublishDate"
+        # }
+    }
+
+
+
 
 api_params = {
     "filters": str.join(";", filters),
@@ -124,6 +143,19 @@ keys = np.array(keys)
 
 
 #-------------------FUNCTIONS-----------------#
+# def pullout_dcids(i, len_arr_out):
+#     dcideaths = i['newCases'].values
+#     dci_deaths = np.pad(dcideaths, (len_arr_out - len(dcideaths), 0))
+#     dci_deaths[np.where(np.isnan(dci_deaths) == True)] = 0
+#     return dci_deaths
+#
+# def pullout_csums(i, len_arr_out):
+#     cumdeaths = i['cumCases'].values
+#     cum_deaths = np.pad(cumdeaths, (len(reporting_dates)-len(cumdeaths), 0))
+#     cum_deaths[np.where(np.isnan(cum_deaths)==True)] = 0
+#     return cum_deaths
+
+
 def pullout_dcids(i, len_arr_out):
     dcideaths = i['newDeaths'].values
     dci_deaths = np.pad(dcideaths, (len_arr_out - len(dcideaths), 0))
@@ -207,10 +239,10 @@ for i in range(1,len(keys)):
 plot_col_dcids = keys[np.arange(1, len(keys), 4)]
 plot_col_roll_avgs = keys[np.arange(2, len(keys), 4)]
 plot_col_roll_avgs_std = keys[np.arange(3, len(keys), 4)]
-cols = sns.color_palette("Set2")[:len(plot_col_dcids)]
+cols = sns.color_palette("Paired")[:len(plot_col_dcids)]
 
-colors = ["windows blue", "amber", "greyish", "faded green", "dusty purple", "olive", "maroon", "sea green"]
-cols = sns.xkcd_palette(colors)
+# colors = ["windows blue", "amber", "greyish", "faded green", "dusty purple", "olive", "maroon", "sea green"]
+# cols = sns.xkcd_palette(colors)
 
 fig, ax = plt.subplots()
 
@@ -239,10 +271,130 @@ plt.tight_layout()
 
 
 
+#
+# def open_window():
+#
+#
+#     master = Tk()
+#     master.title("Display Covid Plot")
+#     master.geometry('600x400')
+#
+#     master_OPTIONS = ["Include", "Remove"]
+#
+#     master_variables = StringVar(master)
+#     master_variables.set(master_OPTIONS[0]) # default value
+#
+#     w = OptionMenu(master, master_variables, *master_OPTIONS)
+#     w.pack()
+#
+#     entry_master_window = Entry(master, width=40)
+#     entry_master_window.insert(0, "WillData")
+#     entry_master_window.pack()
+#
+#
+#     button_master_window = Button(master, text="OK", command=ok)
+#     button_master_window.pack()
+#
+#     master.mainloop()
+#
+#
+# open_window()
 
 
 
 
 
-
-
+#
+# class plot_window_select:
+#
+#
+#
+#     def __init__(self, df):
+#         self.df = df
+#         keys = []
+#         for i in df.columns:
+#             keys.append(i)
+#         self.keys = keys
+#         self.names_flags = np.ones(len(keys) - 1)
+#
+#     def generate(self):
+#
+#         for i in range(len(self.select_options)):
+#             if self.select_options[i].get() == "Include":
+#                 self.names_flags[i] = 1
+#             else:
+#                 self.names_flags[i] = 0
+#
+#         print(self.names_flags)
+#         self.plot()
+#
+#
+#     def make_window(self):
+#         self.master = Tk()
+#         self.master.title("Display Covid Plot")
+#         self.master.geometry('1500x800')
+#
+#         master_OPTIONS = ["Include", "Remove"]
+#
+#
+#         labels = []
+#         for i in range(len(keys)-1):
+#             label = Label(self.master, text=keys[i+1])
+#             label.grid(column=0, row=i)
+#             labels.append(label)
+#
+#         self.select_options = []
+#         for i in range(len(keys)-1):
+#
+#             plot_tag_variables = StringVar(self.master)
+#             plot_tag_variables.set(master_OPTIONS[0])
+#             tags = OptionMenu(self.master, plot_tag_variables, *master_OPTIONS)
+#
+#             tags.grid(column=1, row=i)
+#             self.select_options.append(plot_tag_variables)
+#
+#
+#         button_plot_window = Button(self.master, text="generate", command=self.generate)
+#         button_plot_window.grid(column=0, row=len(keys)+1)
+#
+#
+#         self.master.mainloop()
+#
+#
+#
+#     def plot(self):
+#         from matplotlib.figure import Figure
+#         from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+#                                                        NavigationToolbar2Tk)
+#
+#         for i in range(1, len(self.keys)):
+#             combined_df[self.keys[i]] = combined_df[self.keys[i]].apply(pd.to_numeric, downcast='float', errors='coerce')
+#
+#
+#         plot_cols = []
+#         for i in range(len(self.names_flags)):
+#             if self.names_flags[i]==1:
+#                 plot_cols.append(self.keys[i+1])
+#
+#         cols = sns.color_palette("Set2")[:len(plot_cols)]
+#
+#         fig = Figure(figsize=(7, 7),
+#                      dpi=100)
+#
+#         # adding the subplot
+#         ax = fig.add_subplot(111)
+#
+#
+#         combined_df.plot(x=self.keys[0], y=plot_cols, ax=ax, grid=False, rot=90, alpha=0.5,
+#                          color=cols, figsize=(12, 8))
+#
+#         canvas = FigureCanvasTkAgg(fig, master=self.master)
+#         canvas.draw()
+#
+#         # placing the canvas on the Tkinter window
+#         canvas.get_tk_widget().grid(column=3, row=0, columnspan=len(self.keys)*5, rowspan=len(self.keys)*5)
+#
+#
+#
+# p = plot_window_select(combined_df)
+# p.make_window()
