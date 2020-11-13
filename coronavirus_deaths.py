@@ -3,49 +3,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from tkinter import *
-
-from requests import get
-
-# dchoose = 'region'
-# #---------Use government API to access data----------#
-# #--https://coronavirus.data.gov.uk/developers-guide--#
-# def get_data(url):
-#     response = get(endpoint, timeout=10)
-#
-#     if response.status_code >= 400:
-#         raise RuntimeError(f'Request failed: {response.text}')
-#
-#     return response.json()
-#
-#
-# if dchoose == 'nation':
-#     if __name__ == '__main__':
-#         endpoint = (
-#             'https://api.coronavirus.data.gov.uk/v1/data?'
-#             'filters=areaType=nation&'
-#             'structure={"date":"date", "newDeaths":"newDeaths28DaysByPublishDate", "cumDeaths":"cumDeaths28DaysByPublishDate","nation":"areaName"}'
-#         )
-#         data = get_data(endpoint)
-#         # print(data)
-#
-# elif dchoose == 'region':
-#     if __name__ == '__main__':
-#         endpoint = (
-#             'https://api.coronavirus.data.gov.uk/v1/data?'
-#             'filters=areaType=region&'
-#             'structure={"date":"date", "newDeaths":"newDeaths28DaysByPublishDate", "cumDeaths":"cumDeaths28DaysByPublishDate","nation":"areaName"}'
-#         )
-#         data = get_data(endpoint)
-#         print(data)
-
-
-
 from requests import get
 from json import dumps
 
 ENDPOINT = "https://api.coronavirus.data.gov.uk/v1/data"
 AREA_TYPE = "nation"
-# AREA_TYPE = "region"
+AREA_TYPE = "region"
 # AREA_NAME = "england"
 
 filters = [
