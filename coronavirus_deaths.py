@@ -131,6 +131,8 @@ def pullout_csums(i, len_arr_out):
     cum_deaths[np.where(np.isnan(cum_deaths)==True)] = 0
     return cum_deaths
 
+
+
 def moving_avg(array_in, nOsteps):
     # create a 7-day moving average for daily cases
     # and a standard deviation
@@ -166,11 +168,7 @@ for i in nations:
     rolling_avg, rolling_avg_std = moving_avg(dci_deaths, 7)
     cum_deaths = pullout_csums(country_data, len_array)
 
-    # rolling_avg_std += 1e-6
-
     sum_dci_deaths += dci_deaths
-    # sum_rolling_avg += rolling_avg
-    # sum_rolling_avg_std += np.sqrt(sum_rolling_avg_std**2 + rolling_avg**2)
     sum_cum_deaths += cum_deaths
 
     reporting_dates = np.c_[reporting_dates, dci_deaths]
@@ -231,133 +229,3 @@ fig, ax = plt.subplots()
 plot_col_cum = keys[np.arange(4, len(keys), 4)]
 combined_df.plot(x='date', y=plot_col_cum, ax=ax, grid=False, rot=90, figsize=(12,8), color=cols)
 plt.tight_layout()
-
-
-
-#
-# def open_window():
-#
-#
-#     master = Tk()
-#     master.title("Display Covid Plot")
-#     master.geometry('600x400')
-#
-#     master_OPTIONS = ["Include", "Remove"]
-#
-#     master_variables = StringVar(master)
-#     master_variables.set(master_OPTIONS[0]) # default value
-#
-#     w = OptionMenu(master, master_variables, *master_OPTIONS)
-#     w.pack()
-#
-#     entry_master_window = Entry(master, width=40)
-#     entry_master_window.insert(0, "WillData")
-#     entry_master_window.pack()
-#
-#
-#     button_master_window = Button(master, text="OK", command=ok)
-#     button_master_window.pack()
-#
-#     master.mainloop()
-#
-#
-# open_window()
-
-
-
-
-
-#
-# class plot_window_select:
-#
-#
-#
-#     def __init__(self, df):
-#         self.df = df
-#         keys = []
-#         for i in df.columns:
-#             keys.append(i)
-#         self.keys = keys
-#         self.names_flags = np.ones(len(keys) - 1)
-#
-#     def generate(self):
-#
-#         for i in range(len(self.select_options)):
-#             if self.select_options[i].get() == "Include":
-#                 self.names_flags[i] = 1
-#             else:
-#                 self.names_flags[i] = 0
-#
-#         print(self.names_flags)
-#         self.plot()
-#
-#
-#     def make_window(self):
-#         self.master = Tk()
-#         self.master.title("Display Covid Plot")
-#         self.master.geometry('1500x800')
-#
-#         master_OPTIONS = ["Include", "Remove"]
-#
-#
-#         labels = []
-#         for i in range(len(keys)-1):
-#             label = Label(self.master, text=keys[i+1])
-#             label.grid(column=0, row=i)
-#             labels.append(label)
-#
-#         self.select_options = []
-#         for i in range(len(keys)-1):
-#
-#             plot_tag_variables = StringVar(self.master)
-#             plot_tag_variables.set(master_OPTIONS[0])
-#             tags = OptionMenu(self.master, plot_tag_variables, *master_OPTIONS)
-#
-#             tags.grid(column=1, row=i)
-#             self.select_options.append(plot_tag_variables)
-#
-#
-#         button_plot_window = Button(self.master, text="generate", command=self.generate)
-#         button_plot_window.grid(column=0, row=len(keys)+1)
-#
-#
-#         self.master.mainloop()
-#
-#
-#
-#     def plot(self):
-#         from matplotlib.figure import Figure
-#         from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
-#                                                        NavigationToolbar2Tk)
-#
-#         for i in range(1, len(self.keys)):
-#             combined_df[self.keys[i]] = combined_df[self.keys[i]].apply(pd.to_numeric, downcast='float', errors='coerce')
-#
-#
-#         plot_cols = []
-#         for i in range(len(self.names_flags)):
-#             if self.names_flags[i]==1:
-#                 plot_cols.append(self.keys[i+1])
-#
-#         cols = sns.color_palette("Set2")[:len(plot_cols)]
-#
-#         fig = Figure(figsize=(7, 7),
-#                      dpi=100)
-#
-#         # adding the subplot
-#         ax = fig.add_subplot(111)
-#
-#
-#         combined_df.plot(x=self.keys[0], y=plot_cols, ax=ax, grid=False, rot=90, alpha=0.5,
-#                          color=cols, figsize=(12, 8))
-#
-#         canvas = FigureCanvasTkAgg(fig, master=self.master)
-#         canvas.draw()
-#
-#         # placing the canvas on the Tkinter window
-#         canvas.get_tk_widget().grid(column=3, row=0, columnspan=len(self.keys)*5, rowspan=len(self.keys)*5)
-#
-#
-#
-# p = plot_window_select(combined_df)
-# p.make_window()
