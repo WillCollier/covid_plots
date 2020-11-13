@@ -7,6 +7,8 @@ from requests import get
 from json import dumps
 
 ENDPOINT = "https://api.coronavirus.data.gov.uk/v1/data"
+
+# Select if you want the breakdowns by nations or regions of england
 AREA_TYPE = "nation"
 AREA_TYPE = "region"
 # AREA_NAME = "england"
